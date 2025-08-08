@@ -1,168 +1,379 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        @font-face {
-            font-family: "PingFang SC";
-            src: local("PingFang SC"), sans-serif;
-        }
-        body {
-            font-family: "PingFang SC", sans-serif;
-            margin: 0;
-            padding: 15px;
-            background: transparent;
-        }
-        .container {
-            width: 340px;
-            background: #fff;
-            border: 1px solid #000;
-            padding: 25px;
-            box-sizing: border-box;
-        }
-        .time-display {
-            font-size: 60px;
-            font-weight: 500;
-            color: #000;
-            margin-bottom: 30px;
-            text-align: center;
-            letter-spacing: -1px;
-        }
-        .progress-section {
-            margin-bottom: 25px;
-            position: relative;
-            padding-right: 50px; /* 为右侧百分比预留空间 */
-            box-sizing: border-box;
-        }
-        .progress-label {
-            font-size: 14px;
-            color: #000;
-            margin-bottom: 8px;
-            font-weight: 500;
-            display: block; /* 确保标签单独占一行且左对齐 */
-            text-align: left; /* 明确设置左对齐 */
-        }
-        .progress-bar {
-            width: 100%;
-            height: 6px;
-            background: #f0f0f0;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        .progress-fill {
-            height: 100%;
-            background: #000;
-            transition: width 0.5s ease;
-            border-radius: 3px;
-        }
-        .progress-percent {
-            font-size: 14px;
-            color: #000;
-            position: absolute;
-            top: 0;
-            right: 0; /* 固定在右侧 */
-        }
-    </style>
-    <title>时间进度</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>永不遮挡的时间进度</title>
+  <style>
+    * {
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+
+    body {
+      font-family: "PingFang SC", sans-serif;
+      padding: 15px;
+      background: transparent;
+      overflow: hidden; 
+    }
+
+    /* 容器：采用弹性布局，强制内容分层 */
+    .container {
+      width: 320px; 
+      min-width: 220px; 
+      min-height: 280px; 
+      background: #fff;
+      border: 1px solid #000;
+      padding: 15px;
+      position: relative; 
+      transition: all 0.3s ease; 
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between; /* 强制内容分散排列 */
+    }
+
+    /* 时间显示区：独立容器，避免挤压 */
+    .time-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 60px; /* 最低高度，防止被挤扁 */
+    }
+    .time-display {
+      font-size: 36px;
+      font-weight: 500;
+      color: #000;
+      letter-spacing: -1px;
+      white-space: nowrap; 
+      overflow: hidden; 
+      max-width: 100%; 
+    }
+
+    /* 进度条区：统一容器，保证间距 */
+    .progress-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px; /* 模块之间强制间距 */
+    }
+
+    .progress-section {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 4px; /* 内部元素间距 */
+    }
+
+    .progress-label {
+      font-size: 14px;
+      color: #000;
+      font-weight: 500;
+      text-align: left;
+    }
+
+    .progress-bar-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .progress-bar {
+      flex: 1; /* 进度条占满剩余空间 */
+      height: 6px;
+      background: #f0f0f0;
+      border-radius: 3px;
+      overflow: hidden;
+      transition: height 0.3s ease;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: #000;
+      transition: width 0.5s ease;
+      border-radius: 3px;
+    }
+
+    .progress-percent {
+      font-size: 14px;
+      color: #000;
+      margin-left: 8px; /* 与进度条保持间距 */
+    }
+
+    /* 缩放手柄 */
+    .resize-handle {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: 16px;
+      height: 16px;
+      background: #000;
+      cursor: nwse-resize;
+      z-index: 10;
+    }
+    .resize-handle::before,
+    .resize-handle::after {
+      content: '';
+      position: absolute;
+      background: #fff;
+    }
+    .resize-handle::before {
+      width: 1px;
+      height: 9px;
+      right: 6px;
+      bottom: 0;
+    }
+    .resize-handle::after {
+      width: 9px;
+      height: 1px;
+      right: 0;
+      bottom: 6px;
+    }
+
+    /* 最小尺寸保护 */
+    @media (max-width: 220px) {
+      .time-display {
+        font-size: 20px;
+      }
+      .progress-label, .progress-percent {
+        font-size: 12px;
+      }
+      .progress-bar {
+        height: 4px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <div class="time-display" id="time">--:--:--</div>
-        
-        <div class="progress-section">
-            <div class="progress-label" id="year-label">2025年</div>
-            <div class="progress-percent" id="year-percent">0%</div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="year-progress"></div>
-            </div>
-        </div>
-        
-        <div class="progress-section">
-            <div class="progress-label" id="month-label">8月8日</div>
-            <div class="progress-percent" id="month-percent">0%</div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="month-progress"></div>
-            </div>
-        </div>
-        
-        <div class="progress-section">
-            <div class="progress-label" id="week-label">第32周</div>
-            <div class="progress-percent" id="week-percent">0%</div>
-            <div class="progress-bar">
-                <div class="progress-fill" id="week-progress"></div>
-            </div>
-        </div>
+  <div class="container" id="time-container">
+    <!-- 时间显示独立容器 -->
+    <div class="time-wrapper">
+      <div class="time-display" id="time">--:--:--</div>
     </div>
 
-    <script>
-        function updateTime() {
-            const now = new Date();
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = now.getMinutes().toString().padStart(2, '0');
-            const seconds = now.getSeconds().toString().padStart(2, '0');
-            document.getElementById('time').textContent = `${hours}:${minutes}:${seconds}`;
+    <!-- 进度条分组容器 -->
+    <div class="progress-group">
+      <div class="progress-section">
+        <div class="progress-label" id="year-label">2025年</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="year-bar">
+            <div class="progress-fill" id="year-progress"></div>
+          </div>
+          <div class="progress-percent" id="year-percent">0%</div>
+        </div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-label" id="month-label">8月8日</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="month-bar">
+            <div class="progress-fill" id="month-progress"></div>
+          </div>
+          <div class="progress-percent" id="month-percent">0%</div>
+        </div>
+      </div>
+
+      <div class="progress-section">
+        <div class="progress-label" id="week-label">第32周</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar" id="week-bar">
+            <div class="progress-fill" id="week-progress"></div>
+          </div>
+          <div class="progress-percent" id="week-percent">0%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 缩放手柄 -->
+    <div class="resize-handle" id="resize-handle"></div>
+  </div>
+
+  <script>
+    // 核心目标：通过强制分层布局 + 动态适配，彻底解决遮挡
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+    let isShiftPressed = false;
+    const container = document.getElementById('time-container');
+    const resizeHandle = document.getElementById('resize-handle');
+    const timeDisplay = document.getElementById('time');
+
+    // 动态适配函数：同时调整字体、间距、进度条高度
+    function adjustLayout() {
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+
+      // 1. 时间显示适配
+      const timeFontSize = Math.max(
+        16, // 最小字号
+        containerWidth / 8 // 动态计算
+      );
+      timeDisplay.style.fontSize = `${timeFontSize}px`;
+
+      // 2. 进度条文字适配
+      const progressFontSize = Math.min(
+        timeFontSize - 2, 
+        16
+      );
+      document.querySelectorAll('.progress-label, .progress-percent').forEach(el => {
+        el.style.fontSize = `${progressFontSize}px`;
+      });
+
+      // 3. 进度条高度适配
+      const barHeight = Math.max(
+        4, // 最细高度
+        containerHeight / 70 // 动态计算
+      );
+      document.querySelectorAll('.progress-bar').forEach(bar => {
+        bar.style.height = `${barHeight}px`;
+      });
+
+      // 4. 间距适配（可选，极端情况可加）
+      // const gap = Math.max(8, containerHeight / 40);
+      // document.querySelector('.progress-group').style.gap = `${gap}px`;
+    }
+
+    // 时间更新（强制调用适配）
+    function updateTime() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const seconds = now.getSeconds().toString().padStart(2, '0');
+      timeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+      adjustLayout(); // 每次更新必调
+    }
+
+    // 进度条更新（保持原逻辑）
+    function updateYearProgress() {
+      const now = new Date();
+      const year = now.getFullYear();
+      const startOfYear = new Date(year, 0, 1);
+      const endOfYear = new Date(year, 11, 31);
+
+      const totalDays = Math.ceil((endOfYear - startOfYear) / 86400000) + 1;
+      const daysPassed = Math.ceil((now - startOfYear) / 86400000) + 1;
+      const percentage = (daysPassed / totalDays) * 100;
+
+      document.getElementById('year-progress').style.width = `${percentage}%`;
+      document.getElementById('year-percent').textContent = `${percentage.toFixed(1)}%`;
+      document.getElementById('year-label').textContent = `${year}年`;
+    }
+
+    function updateMonthProgress() {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const day = now.getDate();
+      const year = now.getFullYear();
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const percentage = (day / daysInMonth) * 100;
+
+      document.getElementById('month-label').textContent = `${month}月${day}日`;
+      document.getElementById('month-progress').style.width = `${percentage}%`;
+      document.getElementById('month-percent').textContent = `${percentage.toFixed(1)}%`;
+    }
+
+    function getWeekNumber(date) {
+      const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
+      const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
+      const firstDayOfWeek = firstDayOfYear.getDay() || 7;
+      const dayOfYear = pastDaysOfYear + 1;
+      const weekNumber = Math.ceil((dayOfYear + firstDayOfWeek - 2) / 7);
+      return weekNumber;
+    }
+
+    function updateWeekProgress() {
+      const now = new Date();
+      let dayOfWeek = now.getDay();
+      dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+
+      const weekNumber = getWeekNumber(now);
+      const percentage = (dayOfWeek / 7) * 100;
+
+      document.getElementById('week-label').textContent = `第${weekNumber}周`;
+      document.getElementById('week-progress').style.width = `${percentage}%`;
+      document.getElementById('week-percent').textContent = `${percentage.toFixed(1)}%`;
+    }
+
+    // 初始化 + 自动更新
+    updateTime();
+    updateYearProgress();
+    updateMonthProgress();
+    updateWeekProgress();
+    setInterval(updateTime, 1000);
+    setInterval(updateYearProgress, 60000);
+    setInterval(updateMonthProgress, 60000);
+    setInterval(updateWeekProgress, 60000);
+
+    // 缩放逻辑（加强版）
+    function initResize() {
+      // Shift 键监听
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Shift') isShiftPressed = true;
+      });
+      document.addEventListener('keyup', (e) => {
+        if (e.key === 'Shift') isShiftPressed = false;
+      });
+
+      // 开始缩放
+      resizeHandle.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startWidth = container.offsetWidth;
+        startHeight = container.offsetHeight;
+        container.style.transition = 'none'; // 关闭过渡更跟手
+        document.body.style.cursor = 'nwse-resize';
+        e.preventDefault();
+      });
+
+      // 调整尺寸
+      document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+
+        let newWidth = startWidth + (e.clientX - startX);
+        let newHeight = startHeight + (e.clientY - startY);
+
+        // 最小尺寸保护（覆盖CSS的min-width）
+        const minWidth = 220;
+        const minHeight = 280;
+        newWidth = Math.max(newWidth, minWidth);
+        newHeight = Math.max(newHeight, minHeight);
+
+        // 等比例缩放
+        if (isShiftPressed) {
+          const ratio = startWidth / startHeight;
+          if (newWidth / newHeight > ratio) {
+            newHeight = newWidth / ratio;
+          } else {
+            newWidth = newHeight * ratio;
+          }
+          // 二次保护
+          newWidth = Math.max(newWidth, minWidth);
+          newHeight = Math.max(newHeight, minHeight);
         }
-        
-        function updateYearProgress() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const startOfYear = new Date(year, 0, 1);
-            const endOfYear = new Date(year, 11, 31);
-            
-            const totalDays = Math.ceil((endOfYear - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
-            const daysPassed = Math.ceil((now - startOfYear) / (1000 * 60 * 60 * 24)) + 1;
-            const percentage = (daysPassed / totalDays) * 100;
-            
-            document.getElementById('year-progress').style.width = `${percentage}%`;
-            document.getElementById('year-percent').textContent = `${percentage.toFixed(1)}%`;
-            document.getElementById('year-label').textContent = `${year}年`;
+
+        container.style.width = `${newWidth}px`;
+        container.style.height = `${newHeight}px`;
+        adjustLayout(); // 实时适配
+      });
+
+      // 结束缩放
+      document.addEventListener('mouseup', () => {
+        if (isResizing) {
+          isResizing = false;
+          container.style.transition = 'all 0.3s ease'; // 恢复过渡
+          document.body.style.cursor = '';
+          adjustLayout(); // 最终适配
         }
-        
-        function updateMonthProgress() {
-            const now = new Date();
-            const month = now.getMonth() + 1;
-            const day = now.getDate();
-            const year = now.getFullYear();
-            const daysInMonth = new Date(year, month, 0).getDate();
-            const percentage = (day / daysInMonth) * 100;
-            
-            document.getElementById('month-label').textContent = `${month}月${day}日`;
-            document.getElementById('month-progress').style.width = `${percentage}%`;
-            document.getElementById('month-percent').textContent = `${percentage.toFixed(1)}%`;
-        }
-        
-        function getWeekNumber(date) {
-            const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
-            const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
-            const firstDayOfWeek = firstDayOfYear.getDay() || 7;
-            const dayOfYear = pastDaysOfYear + 1;
-            const weekNumber = Math.ceil((dayOfYear + firstDayOfWeek - 2) / 7);
-            return weekNumber;
-        }
-        
-        function updateWeekProgress() {
-            const now = new Date();
-            let dayOfWeek = now.getDay();
-            dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
-            
-            const weekNumber = getWeekNumber(now);
-            const percentage = (dayOfWeek / 7) * 100;
-            
-            document.getElementById('week-label').textContent = `第${weekNumber}周`;
-            document.getElementById('week-progress').style.width = `${percentage}%`;
-            document.getElementById('week-percent').textContent = `${percentage.toFixed(1)}%`;
-        }
-        
-        updateTime();
-        updateYearProgress();
-        updateMonthProgress();
-        updateWeekProgress();
-        
-        setInterval(updateTime, 1000);
-        setInterval(updateYearProgress, 60000);
-        setInterval(updateMonthProgress, 60000);
-        setInterval(updateWeekProgress, 60000);
-    </script>
+      });
+    }
+
+    // 页面加载后初始化
+    window.addEventListener('load', () => {
+      adjustLayout();
+      initResize();
+    });
+
+    // 窗口变化时也适配（应对浏览器缩放）
+    window.addEventListener('resize', adjustLayout);
+  </script>
 </body>
 </html>

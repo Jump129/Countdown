@@ -1,36 +1,38 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>永不遮挡的时间进度</title>
   <style>
     * {
-      margin: 0; 
-      padding: 0; 
-      box-sizing: border-box; 
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
 
     body {
       font-family: "PingFang SC", sans-serif;
       padding: 15px;
       background: transparent;
-      overflow: hidden; 
+      overflow: hidden;
     }
 
     /* 容器：采用弹性布局，强制内容分层 */
     .container {
-      width: 320px; 
-      min-width: 220px; 
-      min-height: 280px; 
+      width: 320px;
+      min-width: 220px;
+      min-height: 280px;
       background: #fff;
       border: 1px solid #000;
       padding: 15px;
-      position: relative; 
-      transition: all 0.3s ease; 
+      position: relative;
+      transition: all 0.3s ease;
       display: flex;
       flex-direction: column;
-      justify-content: space-between; /* 强制内容分散排列 */
+      justify-content: space-between;
+      /* 强制内容分散排列 */
     }
 
     /* 时间显示区：独立容器，避免挤压 */
@@ -38,30 +40,35 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 60px; /* 最低高度，防止被挤扁 */
+      min-height: 60px;
+      /* 最低高度，防止被挤扁 */
     }
+
+    /* 直接修改这里的 font-size 为 24px */
     .time-display {
-      font-size: 36px;
+      font-size: 24px; 
       font-weight: 500;
       color: #000;
       letter-spacing: -1px;
-      white-space: nowrap; 
-      overflow: hidden; 
-      max-width: 100%; 
+      white-space: nowrap;
+      overflow: hidden;
+      max-width: 100%;
     }
 
     /* 进度条区：统一容器，保证间距 */
     .progress-group {
       display: flex;
       flex-direction: column;
-      gap: 12px; /* 模块之间强制间距 */
+      gap: 12px;
+      /* 模块之间强制间距 */
     }
 
     .progress-section {
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 4px; /* 内部元素间距 */
+      gap: 4px;
+      /* 内部元素间距 */
     }
 
     .progress-label {
@@ -78,8 +85,9 @@
     }
 
     .progress-bar {
-      flex: 1; /* 进度条占满剩余空间 */
-      height: 6px;
+      flex: 1;
+      /* 进度条占满剩余空间 */
+      height: 4px; /* 进度条调细（原6px） */
       background: #f0f0f0;
       border-radius: 3px;
       overflow: hidden;
@@ -96,7 +104,8 @@
     .progress-percent {
       font-size: 14px;
       color: #000;
-      margin-left: 8px; /* 与进度条保持间距 */
+      margin-left: 8px;
+      /* 与进度条保持间距 */
     }
 
     /* 缩放手柄 */
@@ -110,18 +119,21 @@
       cursor: nwse-resize;
       z-index: 10;
     }
+
     .resize-handle::before,
     .resize-handle::after {
       content: '';
       position: absolute;
       background: #fff;
     }
+
     .resize-handle::before {
       width: 1px;
       height: 9px;
       right: 6px;
       bottom: 0;
     }
+
     .resize-handle::after {
       width: 9px;
       height: 1px;
@@ -132,17 +144,21 @@
     /* 最小尺寸保护 */
     @media (max-width: 220px) {
       .time-display {
-        font-size: 20px;
+        font-size: 16px; /* 最小宽度下时间字体为16px */
       }
-      .progress-label, .progress-percent {
+
+      .progress-label,
+      .progress-percent {
         font-size: 12px;
       }
+
       .progress-bar {
-        height: 4px;
+        height: 2px; /* 最小尺寸下进度条更细 */
       }
     }
   </style>
 </head>
+
 <body>
   <div class="container" id="time-container">
     <!-- 时间显示独立容器 -->
@@ -201,34 +217,35 @@
       const containerWidth = container.offsetWidth;
       const containerHeight = container.offsetHeight;
 
-      // 1. 时间显示适配
+      // 1. 时间显示适配：最小16px，参考宽度和高度计算
+      const widthBasedSize = containerWidth / 6;
+      const heightBasedSize = containerHeight / 4;
       const timeFontSize = Math.max(
-        16, // 最小字号
-        containerWidth / 8 // 动态计算
+        16, // 最小字号改为16
+        Math.max(widthBasedSize, heightBasedSize)
       );
       timeDisplay.style.fontSize = `${timeFontSize}px`;
 
       // 2. 进度条文字适配
       const progressFontSize = Math.min(
-        timeFontSize - 2, 
+        Math.max(12, timeFontSize / 4),
         16
       );
       document.querySelectorAll('.progress-label, .progress-percent').forEach(el => {
         el.style.fontSize = `${progressFontSize}px`;
       });
 
-      // 3. 进度条高度适配
+      // 3. 进度条高度适配（调细处理）
       const barHeight = Math.max(
-        4, // 最细高度
-        containerHeight / 70 // 动态计算
+        2, // 最细高度改为2px（原4px）
+        containerHeight / 80 // 分母增大，让高度增长更平缓
       );
       document.querySelectorAll('.progress-bar').forEach(bar => {
         bar.style.height = `${barHeight}px`;
       });
 
-      // 4. 间距适配（可选，极端情况可加）
-      // const gap = Math.max(8, containerHeight / 40);
-      // document.querySelector('.progress-group').style.gap = `${gap}px`;
+      // 4. 调整时间容器高度
+      document.querySelector('.time-wrapper').style.minHeight = `${timeFontSize * 0.8}px`;
     }
 
     // 时间更新（强制调用适配）
@@ -302,7 +319,7 @@
     setInterval(updateMonthProgress, 60000);
     setInterval(updateWeekProgress, 60000);
 
-    // 缩放逻辑（加强版）
+    // 缩放逻辑（保持原逻辑）
     function initResize() {
       // Shift 键监听
       document.addEventListener('keydown', (e) => {
@@ -319,7 +336,7 @@
         startY = e.clientY;
         startWidth = container.offsetWidth;
         startHeight = container.offsetHeight;
-        container.style.transition = 'none'; // 关闭过渡更跟手
+        container.style.transition = 'none';
         document.body.style.cursor = 'nwse-resize';
         e.preventDefault();
       });
@@ -331,7 +348,7 @@
         let newWidth = startWidth + (e.clientX - startX);
         let newHeight = startHeight + (e.clientY - startY);
 
-        // 最小尺寸保护（覆盖CSS的min-width）
+        // 最小尺寸保护
         const minWidth = 220;
         const minHeight = 280;
         newWidth = Math.max(newWidth, minWidth);
@@ -345,7 +362,6 @@
           } else {
             newWidth = newHeight * ratio;
           }
-          // 二次保护
           newWidth = Math.max(newWidth, minWidth);
           newHeight = Math.max(newHeight, minHeight);
         }
@@ -359,7 +375,7 @@
       document.addEventListener('mouseup', () => {
         if (isResizing) {
           isResizing = false;
-          container.style.transition = 'all 0.3s ease'; // 恢复过渡
+          container.style.transition = 'all 0.3s ease';
           document.body.style.cursor = '';
           adjustLayout(); // 最终适配
         }
@@ -372,8 +388,9 @@
       initResize();
     });
 
-    // 窗口变化时也适配（应对浏览器缩放）
+    // 窗口变化时也适配
     window.addEventListener('resize', adjustLayout);
   </script>
 </body>
+
 </html>

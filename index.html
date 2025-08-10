@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>永不遮挡的时间进度</title>
+  <title>时间进度（百分比显示）</title>
   <style>
     * {
       margin: 0;
@@ -19,11 +19,10 @@
       overflow: hidden;
     }
 
-    /* 容器：采用弹性布局，强制内容分层 */
     .container {
       width: 320px;
-      min-width: 220px;
-      min-height: 280px;
+      min-width: 280px;
+      min-height: 250px; /* 降低最小高度，配合上移 */
       background: #fff;
       border: 1px solid #000;
       padding: 15px;
@@ -31,41 +30,38 @@
       transition: all 0.3s ease;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: flex-start; /* 从顶部开始排列，减少顶部空白 */
+      gap: 15px; /* 时间区与进度条区的间距 */
     }
 
-    /* 时间显示区：独立容器，避免挤压 */
     .time-wrapper {
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 60px;
+      min-height: 50px; /* 降低时间区高度，减少占用空间 */
     }
 
-    /* 时间显示保留原有动态逻辑 */
     .time-display {
       font-size: 24px; 
       font-weight: 500;
       color: #000;
       letter-spacing: -1px;
       white-space: nowrap;
-      overflow: hidden;
-      max-width: 100%;
     }
 
-    /* 进度条区：统一容器，保证间距 */
     .progress-group {
       display: flex;
       flex-direction: column;
-      gap: 18px; /* 增大间距，避免百分比重叠 */
+      gap: 15px; /* 减小进度条之间的间距，整体上移 */
+      margin-top: -5px; /* 额外上移进度条组 */
     }
 
     .progress-section {
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      position: relative; /* 新增：作为百分比的定位容器 */
+      gap: 2px; /* 减小标签与进度条的间距 */
+      position: relative;
     }
 
     .progress-label {
@@ -75,10 +71,10 @@
       text-align: left;
     }
 
-    /* 进度条容器改为相对定位，用于放置右上角百分比 */
     .progress-bar-container {
       position: relative;
       width: 100%;
+      margin-top: -2px; /* 标签与进度条进一步靠近 */
     }
 
     .progress-bar {
@@ -87,7 +83,6 @@
       background: #f0f0f0;
       border-radius: 3px;
       overflow: hidden;
-      transition: height 0.3s ease;
     }
 
     .progress-fill {
@@ -97,16 +92,15 @@
       border-radius: 3px;
     }
 
-    /* 百分比调整为右上角定位 */
     .progress-percent {
       position: absolute;
-      top: -18px; /* 定位到进度条上方 */
-      right: 0; /* 靠右对齐 */
-      font-size: 14px;
+      top: -18px; /* 百分比上移，靠近进度条 */
+      right: 0;
+      font-size: 12px;
       color: #000;
+      white-space: nowrap;
     }
 
-    /* 缩放手柄 */
     .resize-handle {
       position: absolute;
       right: 0;
@@ -139,12 +133,10 @@
       bottom: 6px;
     }
 
-    /* 最小尺寸保护 */
-    @media (max-width: 220px) {
+    @media (max-width: 280px) {
       .time-display {
-        font-size: 12px; /* 时分秒最小字体 */
+        font-size: 14px;
       }
-      /* 调整进度条文字最小字体 */
       .progress-label,
       .progress-percent {
         font-size: 10px; 
@@ -169,17 +161,17 @@
           <div class="progress-bar" id="year-bar">
             <div class="progress-fill" id="year-progress"></div>
           </div>
-          <div class="progress-percent" id="year-percent">0%</div>
+          <div class="progress-percent" id="year-percent">0.0%</div>
         </div>
       </div>
 
       <div class="progress-section">
-        <div class="progress-label" id="month-label">8月8日</div>
+        <div class="progress-label" id="month-label">8月</div>
         <div class="progress-bar-container">
           <div class="progress-bar" id="month-bar">
             <div class="progress-fill" id="month-progress"></div>
           </div>
-          <div class="progress-percent" id="month-percent">0%</div>
+          <div class="progress-percent" id="month-percent">0.0%</div>
         </div>
       </div>
 
@@ -189,7 +181,7 @@
           <div class="progress-bar" id="week-bar">
             <div class="progress-fill" id="week-progress"></div>
           </div>
-          <div class="progress-percent" id="week-percent">0%</div>
+          <div class="progress-percent" id="week-percent">0.0%</div>
         </div>
       </div>
     </div>
@@ -205,16 +197,15 @@
     const resizeHandle = document.getElementById('resize-handle');
     const timeDisplay = document.getElementById('time');
 
-    // 进度条文字动态适配函数
+    // 进度条文字动态适配
     function adjustProgressFontSize() {
       const containerWidth = container.offsetWidth;
       const containerHeight = container.offsetHeight;
-      // 根据容器宽高计算进度条文字大小，设置最小10px，最大14px
       const progressFontSize = Math.max(
         10, 
         Math.min(
           14, 
-          (containerWidth + containerHeight) / 40 
+          (containerWidth + containerHeight) / 50
         )
       );
       document.querySelectorAll('.progress-label, .progress-percent').forEach(el => {
@@ -222,24 +213,22 @@
       });
     }
 
-    // 动态适配函数：同时调整时间、进度条文字、进度条高度
+    // 布局适配
     function adjustLayout() {
       const containerWidth = container.offsetWidth;
       const containerHeight = container.offsetHeight;
 
-      // 1. 时间显示适配：最小字体改小为12px
+      // 时间显示适配
       const widthBasedSize = containerWidth / 6;
       const heightBasedSize = containerHeight / 4;
       const timeFontSize = Math.max(
-        12, // 时分秒最小字体
+        14,
         Math.max(widthBasedSize, heightBasedSize)
       );
       timeDisplay.style.fontSize = `${timeFontSize}px`;
 
-      // 2. 进度条文字适配
       adjustProgressFontSize();
 
-      // 3. 进度条高度适配
       const barHeight = Math.max(
         2, 
         containerHeight / 80 
@@ -248,11 +237,10 @@
         bar.style.height = `${barHeight}px`;
       });
 
-      // 4. 调整时间容器高度
       document.querySelector('.time-wrapper').style.minHeight = `${timeFontSize * 0.8}px`;
     }
 
-    // 时间更新（强制调用适配）
+    // 实时时间更新（每秒刷新）
     function updateTime() {
       const now = new Date();
       const hours = now.getHours().toString().padStart(2, '0');
@@ -262,68 +250,98 @@
       adjustLayout(); 
     }
 
-    // 进度条更新（保持原逻辑）
+    // 年进度（剩余百分比）
     function updateYearProgress() {
       const now = new Date();
       const year = now.getFullYear();
-      const startOfYear = new Date(year, 0, 1);
-      const endOfYear = new Date(year, 11, 31);
+      const startOfYear = new Date(year, 0, 1, 0, 0, 0, 0);
+      const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
 
-      const totalDays = Math.ceil((endOfYear - startOfYear) / 86400000) + 1;
-      const daysPassed = Math.ceil((now - startOfYear) / 86400000) + 1;
-      const percentage = (daysPassed / totalDays) * 100;
+      const totalMsInYear = endOfYear - startOfYear + 1;
+      const totalHoursInYear = totalMsInYear / 3600000;
 
-      document.getElementById('year-progress').style.width = `${percentage}%`;
-      document.getElementById('year-percent').textContent = `${percentage.toFixed(1)}%`;
+      const elapsedMs = now - startOfYear;
+      const elapsedHours = elapsedMs / 3600000;
+
+      const remainingHours = totalHoursInYear - elapsedHours;
+      const remainingPercent = ((remainingHours / totalHoursInYear) * 100).toFixed(1);
+
+      document.getElementById('year-progress').style.width = `${100 - (elapsedHours / totalHoursInYear) * 100}%`;
+      document.getElementById('year-percent').textContent = `${remainingPercent}%`;
       document.getElementById('year-label').textContent = `${year}年`;
     }
 
+    // 月进度（剩余百分比）
     function updateMonthProgress() {
       const now = new Date();
-      const month = now.getMonth() + 1;
-      const day = now.getDate();
       const year = now.getFullYear();
-      const daysInMonth = new Date(year, month, 0).getDate();
-      const percentage = (day / daysInMonth) * 100;
+      const month = now.getMonth();
+      const currentDay = now.getDate();
 
-      document.getElementById('month-label').textContent = `${month}月${day}日`;
-      document.getElementById('month-progress').style.width = `${percentage}%`;
-      document.getElementById('month-percent').textContent = `${percentage.toFixed(1)}%`;
+      const startOfMonth = new Date(year, month, 1, 0, 0, 0, 0);
+      const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59, 999);
+
+      const totalMsInMonth = endOfMonth - startOfMonth + 1;
+      const totalHoursInMonth = totalMsInMonth / 3600000;
+
+      const elapsedMs = now - startOfMonth;
+      const elapsedHours = elapsedMs / 3600000;
+
+      const remainingHours = totalHoursInMonth - elapsedHours;
+      const remainingPercent = ((remainingHours / totalHoursInMonth) * 100).toFixed(1);
+
+      document.getElementById('month-label').textContent = `${month + 1}月${currentDay}日`;
+      document.getElementById('month-progress').style.width = `${100 - (elapsedHours / totalHoursInMonth) * 100}%`;
+      document.getElementById('month-percent').textContent = `${remainingPercent}%`;
     }
 
+    // 周进度（剩余百分比）
     function getWeekNumber(date) {
       const firstDayOfYear = new Date(date.getFullYear(), 0, 1);
       const pastDaysOfYear = (date - firstDayOfYear) / 86400000;
       const firstDayOfWeek = firstDayOfYear.getDay() || 7;
       const dayOfYear = pastDaysOfYear + 1;
-      const weekNumber = Math.ceil((dayOfYear + firstDayOfWeek - 2) / 7);
-      return weekNumber;
+      return Math.ceil((dayOfYear + firstDayOfWeek - 2) / 7);
     }
 
     function updateWeekProgress() {
       const now = new Date();
-      let dayOfWeek = now.getDay();
-      dayOfWeek = dayOfWeek === 0 ? 7 : dayOfWeek;
+      const dayOfWeek = now.getDay() || 7;
+
+      const daysToSubtract = dayOfWeek - 1;
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - daysToSubtract);
+      startOfWeek.setHours(0, 0, 0, 0);
+
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      const totalHoursInWeek = 168; // 7*24固定值
+
+      const elapsedMs = now - startOfWeek;
+      const elapsedHours = elapsedMs / 3600000;
+
+      const remainingHours = totalHoursInWeek - elapsedHours;
+      const remainingPercent = ((remainingHours / totalHoursInWeek) * 100).toFixed(1);
 
       const weekNumber = getWeekNumber(now);
-      const percentage = (dayOfWeek / 7) * 100;
-
       document.getElementById('week-label').textContent = `第${weekNumber}周`;
-      document.getElementById('week-progress').style.width = `${percentage}%`;
-      document.getElementById('week-percent').textContent = `${percentage.toFixed(1)}%`;
+      document.getElementById('week-progress').style.width = `${100 - (elapsedHours / totalHoursInWeek) * 100}%`;
+      document.getElementById('week-percent').textContent = `${remainingPercent}%`;
     }
 
-    // 初始化 + 自动更新
+    // 初始化并启动定时器
     updateTime();
     updateYearProgress();
     updateMonthProgress();
     updateWeekProgress();
-    setInterval(updateTime, 1000);
-    setInterval(updateYearProgress, 60000);
-    setInterval(updateMonthProgress, 60000);
-    setInterval(updateWeekProgress, 60000);
+    setInterval(updateTime, 1000);          // 时间每秒更新
+    setInterval(updateYearProgress, 60000); // 年进度每分钟更新
+    setInterval(updateMonthProgress, 60000); // 月进度每分钟更新
+    setInterval(updateWeekProgress, 60000);  // 周进度每分钟更新
 
-    // 缩放逻辑（保持原逻辑）
+    // 缩放功能
     function initResize() {
       document.addEventListener('keydown', (e) => {
         if (e.key === 'Shift') isShiftPressed = true;
@@ -349,18 +367,14 @@
         let newWidth = startWidth + (e.clientX - startX);
         let newHeight = startHeight + (e.clientY - startY);
 
-        const minWidth = 220;
-        const minHeight = 280;
+        const minWidth = 280;
+        const minHeight = 250; // 同步降低最小高度
         newWidth = Math.max(newWidth, minWidth);
         newHeight = Math.max(newHeight, minHeight);
 
         if (isShiftPressed) {
           const ratio = startWidth / startHeight;
-          if (newWidth / newHeight > ratio) {
-            newHeight = newWidth / ratio;
-          } else {
-            newWidth = newHeight * ratio;
-          }
+          newWidth = newHeight * ratio;
           newWidth = Math.max(newWidth, minWidth);
           newHeight = Math.max(newHeight, minHeight);
         }
